@@ -1,0 +1,65 @@
+# ── PHI / governed-data guard. Read this before adding anything. ─────────────
+# The underlying data are protected health information under IRB H-55929 and
+# H-53771. Nothing patient-level may ever enter this repository. The aggregate
+# Foundry export is ALSO excluded: it contains no patient rows, but some cells
+# fall below a disclosure-safe count and one provenance note records internal
+# identifiers, so it is governed alongside the source data.
+#
+# If you add a data loader, point it at a path OUTSIDE the repo. Do not "just for
+# now" commit a CSV.
+
+# Aggregate exports and any data dump
+foundry_exports/
+*.txt
+!requirements*.txt
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.parquet
+*.feather
+*.dta
+*.sav
+*.json
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.db
+*.sqlite
+
+# Notebooks — outputs routinely embed data previews
+*.ipynb
+
+# Manuscript sources and build artifacts
+*.tex
+*.bib
+*.pdf
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.synctex.gz
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# Credentials
+.env
+*.pem
+*.key
+credentials*
+*token*
+*secret*
+
+# OS
+.DS_Store
+Thumbs.db
