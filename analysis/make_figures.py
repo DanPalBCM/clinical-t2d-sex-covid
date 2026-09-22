@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Build the main figures for the T2D Sex x COVID-era manuscript from the Foundry
+Build the figures for the T2D sex x calendar-era manuscript from the Foundry
 export dump. No Foundry needed.
 
 SOURCE OF TRUTH, since 2026-09-17:
@@ -18,10 +18,13 @@ pre-2026-09-17 version of this file:
                              predicted_a1c -> predicted_mean_a1c, + ci_low/ci_high,
                              + n_patients, observed_mean
 
-Figures (-> figures/main_figures/):
-  fig_sex_by_period.pdf   Proportion male pre- vs post-2020 (overall + by age cat)
-  fig_a1c_trajectory.pdf  HbA1c by sex and era: model fit (A) vs observed (B)
-  fig_or_forest.pdf       Adjusted ORs: sex, period, and sex x period, 3 outcomes
+Figures, written to the directory matching where main.tex cites them:
+  figures/main_figures/
+    fig_sex_by_period.pdf      Fig 1. Proportion male pre- vs post-2020 (+ by age cat)
+    fig_a1c_trajectory.pdf     Fig 2. HbA1c by sex and era: model fit (A) vs observed (B)
+  figures/supplementary_figures/
+    fig_or_forest.pdf          Fig S1. Adjusted ORs: sex, period, sex x period
+    fig_participant_flow.pdf   Fig S2. STROBE participant flow
 
 Usage:  python other/scripts/make_figures.py
 """
@@ -48,8 +51,18 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(HERE)))  # unused; kept e
 PROJ = os.path.dirname(HERE)                      # other/
 BASE = os.path.dirname(PROJ)                      # manuscript root
 DATA = os.path.join(PROJ, "foundry_exports", "data_new_9172026", "data_new.txt")
+# TWO output directories, matching where each figure is cited in main.tex.
+# Figures 1 and 2 are main-text display items; the OR forest plot and the
+# participant-flow diagram were demoted to supplementary items to meet the
+# journal's four-display-item limit, so they belong in supplementary_figures/.
+# main.tex's \graphicspath searches both, so a misfiled figure still COMPILES --
+# which is exactly why it went unnoticed that both supplementary figures were
+# being written to main_figures/ and supplementary_figures/ was empty. Keep each
+# savefig pointed at the directory matching its role.
 OUT = os.path.join(BASE, "figures", "main_figures")
+OUT_SUPP = os.path.join(BASE, "figures", "supplementary_figures")
 os.makedirs(OUT, exist_ok=True)
+os.makedirs(OUT_SUPP, exist_ok=True)
 
 CUTPOINT = "2020-01-01"          # primary exposure boundary; 2020-03-15 is the sensitivity
 
@@ -99,7 +112,7 @@ C_POST = "#008837"
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# FIGURE 1 — proportion male by COVID era (overall + by age category)
+# FIGURE 1 — proportion male by calendar era (overall + by age category)
 # ════════════════════════════════════════════════════════════════════════════
 def fig_sex_by_period():
     sp = B["sex_by_period"].copy()
@@ -242,7 +255,12 @@ def fig_a1c_trajectory():
     ax2.set_ylabel("Mean HbA1c (mmol/mol)", fontsize=11.5)
     ax2.yaxis.set_major_locator(ticker.MultipleLocator(10))
 
-    fig.suptitle("HbA1c by sex and COVID era: model fit against observed means",
+    # "calendar era", NOT "COVID era": the manuscript frames the exposure as
+    # calendar period throughout, because a genuine pandemic effect is only one of
+    # three candidate explanations it can distinguish (the others being changed
+    # ascertainment and the age-composition shift). The caption says "calendar
+    # era", so the panel title must too.
+    fig.suptitle("HbA1c by sex and calendar era: model fit against observed means",
                  fontsize=13, fontweight="bold", y=1.01)
     fig.tight_layout()
     for ext in ("pdf", "svg"):
@@ -305,7 +323,7 @@ def fig_or_forest():
                  fontsize=12.5, fontweight="bold")
     fig.tight_layout()
     for ext in ("pdf", "svg"):
-        fig.savefig(os.path.join(OUT, f"fig_or_forest.{ext}"), bbox_inches="tight")
+        fig.savefig(os.path.join(OUT_SUPP, f"fig_or_forest.{ext}"), bbox_inches="tight")
     plt.close(fig)
     print("  wrote fig_or_forest")
 
@@ -392,16 +410,27 @@ def fig_participant_flow():
         ax.annotate("", xy=(CX, nxt), xytext=(CX, ytop - BH),
                     arrowprops=dict(arrowstyle="-|>", color=INK, lw=1.2))
 
+    # Vertical connector STOPS above the "Analysis sets" label; the fan-out to the
+    # four boxes then starts BELOW it, from y_fan. Previously both the connector and
+    # the four elbow arrows originated at the label's own y, so the line was drawn
+    # straight through the text.
     y_an = tops[-1] - BH
-    ax.annotate("", xy=(CX, y_an - 0.62), xytext=(CX, y_an),
+    y_lab = y_an - 0.40
+    y_fan = y_an - 0.74
+    ax.annotate("", xy=(CX, y_lab + 0.14), xytext=(CX, y_an),
                 arrowprops=dict(arrowstyle="-", color=INK, lw=1.2))
-    ax.text(CX, y_an - 0.86, "Analysis sets (not mutually exclusive)",
+    ax.text(CX, y_lab, "Analysis sets (not mutually exclusive)",
             ha="center", va="center", fontsize=9.4, style="italic",
-            color="#444444")
+            color="#444444", zorder=4)
+    ax.annotate("", xy=(CX, y_fan), xytext=(CX, y_lab - 0.14),
+                arrowprops=dict(arrowstyle="-", color=INK, lw=1.2))
 
     sw, gap, sh = 2.60, 0.26, 1.46
     x0 = CX - (4 * sw + 3 * gap) / 2
-    sy = y_an - 1.30
+    sy = y_fan - 0.46
+    # Horizontal spine joining the fan-out to each box, then a short drop per box.
+    ax.annotate("", xy=(x0 + sw / 2, y_fan), xytext=(x0 + 3 * (sw + gap) + sw / 2, y_fan),
+                arrowprops=dict(arrowstyle="-", color=INK, lw=1.0))
     for i, (label, sub) in enumerate(sets):
         xl = x0 + i * (sw + gap)
         ax.add_patch(plt.Rectangle((xl, sy - sh), sw, sh,
@@ -411,13 +440,12 @@ def fig_participant_flow():
                 fontsize=9.3, linespacing=1.35, zorder=3)
         ax.text(xl + sw / 2, sy - 1.24, sub, ha="center", va="center",
                 fontsize=8.2, color="#555555", zorder=3)
-        ax.annotate("", xy=(xl + sw / 2, sy), xytext=(CX, y_an - 0.62),
-                    arrowprops=dict(arrowstyle="-|>", color=INK, lw=0.9,
-                                    connectionstyle="angle,angleA=90,angleB=0,rad=6"))
+        ax.annotate("", xy=(xl + sw / 2, sy), xytext=(xl + sw / 2, y_fan),
+                    arrowprops=dict(arrowstyle="-|>", color=INK, lw=0.9))
 
     fig.tight_layout()
     for ext in ("pdf", "svg"):
-        fig.savefig(os.path.join(OUT, f"fig_participant_flow.{ext}"),
+        fig.savefig(os.path.join(OUT_SUPP, f"fig_participant_flow.{ext}"),
                     bbox_inches="tight")
     plt.close(fig)
     print("  wrote fig_participant_flow")
@@ -429,4 +457,5 @@ if __name__ == "__main__":
     fig_a1c_trajectory()
     fig_or_forest()
     fig_participant_flow()
-    print(f"figures -> {OUT}")
+    print(f"main figures      -> {OUT}")
+    print(f"supplementary     -> {OUT_SUPP}")
