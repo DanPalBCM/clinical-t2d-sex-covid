@@ -313,18 +313,28 @@ def fig_or_forest():
 # ════════════════════════════════════════════════════════════════════════════
 # FIGURE S2 — participant flow (STROBE)
 #
-# Counts are READ FROM the participant_flow block, never typed in, so the diagram
-# cannot drift from the export the way the Methods prose once did (it named three
-# losses between 2,491 and 2,489, which sums to 2,488).
+# The ENDPOINT counts are READ FROM the participant_flow block, never typed in, so
+# they cannot drift from the export the way the Methods prose once did (it named
+# three losses between 2,491 and 2,489, which sums to 2,488).
+#
+# *** THE LOSS MECHANISM IS THE SIBLINGS', NOT THIS EXPORT'S (2026-09-22). ***
+# participant_flow's step LABELS attribute the 2,491 -> 2,489 loss to one manual
+# chart-review exclusion plus one patient lost inside 11_outcomes.py. The sibling
+# T2D_Biostats and the parent CEDAR manuscript both say the two patients fell
+# outside the 8-20-year age range, and on Daniel's instruction THE SIBLINGS ARE
+# AUTHORITATIVE on the shared cohort -- this manuscript was the wrong one. So the
+# diagram shows ONE two-patient age-eligibility step, not two one-patient steps.
+# Only the labels change; 2,491 and 2,489 are still read from the block, so the
+# arithmetic is still export-checked.
 #
 # SCOPE IS DELIBERATE. The upstream cohort build belongs to the parent CEDAR /
 # Pediatric Diabetes manuscript, so the top box states the case definition is
 # applied there and does NOT redraw its exclusion funnel. This figure covers only
-# what is this paper's own: the two losses to the analytic N, then the four
-# analysis sets. Three papers must not print the same diagram.
+# what is this paper's own: the age-eligibility step to the analytic N, then the
+# four analysis sets. Three papers must not print the same diagram.
 #
-# DISCLOSURE: every cell here is >= 778, far above any threshold, and the two
-# single-patient losses are step *differences*, not cells describing patients.
+# DISCLOSURE: every cell here is >= 778, far above any threshold, and the
+# two-patient loss is a step *difference*, not a cell describing patients.
 # ════════════════════════════════════════════════════════════════════════════
 def fig_participant_flow():
     pf = B["participant_flow"].set_index("step")["n"].to_dict()
@@ -337,7 +347,6 @@ def fig_participant_flow():
 
     rows_src = n("Rows in the source")
     n_def = n("Distinct patients meeting")
-    n_review = n("Patients after demographics inner join")
     n_analytic = n("Analytic cohort")
     n_bmi = n("... with complete BMI")
     n_a1c = n("... with >=1 HbA1c")
@@ -349,10 +358,8 @@ def fig_participant_flow():
          "one row per HbA1c observation"),
         (f"Patients meeting the type 2 diabetes\ncase definition  (n = {n_def:,})",
          "case definition applied upstream;\nsee companion methodology paper"),
-        (f"After manual chart review\n(n = {n_review:,})",
-         f"−{n_def - n_review} excluded at review"),
         (f"Analytic cohort\n(N = {n_analytic:,})",
-         f"−{n_review - n_analytic} lost at outcome construction"),
+         f"−{n_def - n_analytic} outside the 8–20-year\nage range at diagnosis"),
     ]
     sets = [
         (f"Complete\nBMI $z$-score\n{n_bmi:,}", "3 logistic models"),
@@ -365,7 +372,9 @@ def fig_participant_flow():
     ax.set_xlim(0, 12); ax.set_ylim(0, 10.6); ax.axis("off")
 
     BW, BH, CX = 5.6, 1.02, 6.0
-    tops = [9.5, 7.75, 6.0, 4.25]
+    # Derived from len(main_boxes) so the chain cannot fall out of step with the
+    # boxes again if a step is ever added or removed.
+    tops = [9.5 - 1.75 * i for i in range(len(main_boxes))]
     for (label, side), ytop in zip(main_boxes, tops):
         emph = label.startswith("Analytic cohort")
         ax.add_patch(plt.Rectangle(
